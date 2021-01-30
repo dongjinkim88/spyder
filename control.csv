@@ -1,0 +1,5 @@
+parameter,value,description
+run_date,20201211,run date
+num_of_mc_states,1000,number of monte carlo states
+random_seed,12345,random seed
+sample_dist,t,sample distribution t or normal
