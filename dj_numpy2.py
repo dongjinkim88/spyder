@@ -1,51 +1,49 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Feb 25 21:02:40 2019
-
-@author: djkim
+numpy random
+5/15/2021
+djkim
 """
 
 import numpy as np
-a=np.arange(15).reshape(3,5)
-a
+from scipy import stats
+from scipy.stats import norm, skewnorm
+import matplotlib.pyplot as plt
 
-a.size
-a.shape
+np.random.seed(1)
+n=10000
+m=100
+a=4.0
 
-b=np.array([6,7,8])
-b
+# sn = np.random.standard_normal(n)
+# sn_l= sn[sn<=0]; sn_r = sn[sn>0]; sn_skewed = np.concatenate((sn_l, sn_r*a))
+sn = norm.rvs(size=n)
+sn_skewed = skewnorm.rvs(a, size=n)
 
-print(type(a))
-print(type(b))
+# skewnorm.pdf(x, a) = 2 * norm.pdf(x) * norm.cdf(a*x)
+# skewnorm.pdf(x, a, loc, scale) = skewnorm.pdf((x-loc)/scale, a) / scale
+# mean, var, skew, kurt = skewnorm.stats(a, moments='mvsk')
 
-np.linspace(0,1,10)
+#plot
+fig = plt.figure()
+# fig, ax = plt.subplots(1, 1)
+# plt.figure(figsize=(20,10))
+plt.style.use('classic')
+plt.title('Standard Normal vs. Rightly Skewed Normal')
+plt.hist(sn, m, density=True, histtype='stepfilled', alpha=0.2)
+plt.hist(sn_skewed, m, density=True, histtype='stepfilled', alpha=0.2)
+plt.legend(('standard normal','rightly skewed'))
+plt.show()
 
-A=np.array([[1,1],[0,1]])
-B=np.array([[2,0],[3,4]])
-#elementwise product
-A*B
-#matrix product
-A@B
+#stats
+print('standard normal dist  : mu= {:5.4f}, std={:5.4f}, skewness={:5.4f}, ex-kurtosis={:5.4f}'.format(sn.mean(),sn.std(),stats.skew(sn),stats.kurtosis(sn)))
+print('rightly skewed normal : mu= {:5.4f}, std={:5.4f}, skewness={:5.4f}, ex-kurtosis={:5.4f}'.format(sn_skewed.mean(),sn_skewed.std(),stats.skew(sn_skewed),stats.kurtosis(sn_skewed)))
+# print(stats.describe(sn))
+# print(stats.describe(sn_skewed))
 
-a=np.random.normal(size=5)
-print(a)
-a=np.random.randint(10,30,6)
-a
-a=np.random.random((10,))
-a
-type(a)
-a=np.random.random(10)
-a
-type(a)
-amin, amax = a.min(), a.max()
-print(amin, amax)
+# from statsmodels.distributions.empirical_distribution import ECDF
+# l = [3,3,1,4]
+# dj = ECDF(l)
+# dj([3,55,0.5,1.5])
 
-x=np.arange(10)
-np.random.shuffle(x)
-print(x)
-
-def roll_dice(num_face):
-    return np.random.randint(1, num_face)
-
-print(roll_dice(6))

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Fri Dec 11 12:40:21 2020
-
-@author: djkim
+basic numpy
+5/15/2021
+djkim
 """
 
 import numpy as np
@@ -36,9 +36,11 @@ d = np.arange(6).reshape(2, 3)
 d
 e = d.T
 e
+#matrix product
 d @ e
 d.dot(e)
-
+#elementwise product
+d*d*d
 
 import numpy.linalg as la
 
@@ -65,7 +67,7 @@ for func in (
     np.abs,
     np.sqrt,
     np.exp,
-#    np.log,
+    #    np.log,
     np.sign,
     np.ceil,
     np.modf,
@@ -78,9 +80,31 @@ for func in (
 
 m = np.array([20, -5, 30, 40])
 m < [15, 16, 35, 36]
-m[m < 30]
+n=m[m < 30]
+n
+n[0]=5
+n
+m
+
+n2=m[:2]
+n2
+n2[0]=5
+n2
+m
+#indexing uses pointer
+#masking uses copy (not efficient)
 
 np.random.rand(3, 4)
 np.random.randn(3, 4)
 np.random.randint(3, 10)
+
+#shuffle
+x=np.arange(10)
+np.random.shuffle(x)
+print(x)
+
+def roll_dice(num_face):
+    return np.random.randint(1, num_face)
+
+print(roll_dice(6))
 
