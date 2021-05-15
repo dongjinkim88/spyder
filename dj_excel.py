@@ -1,44 +1,36 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Dec 14 10:21:32 2020
-
-@author: djkim
+export pandas dataframe to excel
+5/15/2021
+djkim
 """
 
-import numpy as np
 import pandas as pd
+from openpyxl import load_workbook
 
 d={'chicago':1000,'new york':1300, 'portland':900, 'austin':450,
    'boston':None}
 
 city = pd.Series(d)
+city[:2]
+city[['new york','austin']]
 
 city2 = pd.DataFrame()
 city2['city'] = d.keys()
 city2['pop'] = d.values()
 
-# cannot add sheet, just create a book
-city2.to_excel('city2.xlsx', 'data', index=False)
+# First, create book with one sheet
+city2.to_excel('city.xlsx', sheet_name='city', index=False)
 
-x1 = np.random.randn(100, 2)
-df1 = pd.DataFrame(x1)
-x2 = np.random.randn(100, 2)
-df2 = pd.DataFrame(x2)
+# And then append many sheets using openpyxl
+book = load_workbook('city.xlsx')
+with pd.ExcelWriter('city.xlsx', engine='openpyxl', mode='a') as writer:
+    city2.to_excel(writer, sheet_name='city2', index=False, startrow=1)
+    city2.to_excel(writer, sheet_name='city3', index=False, startrow=2)
+    
+# Or create a book with many sheets, without appending
+with pd.ExcelWriter('city2.xlsx') as writer:
+    city2.to_excel(writer, sheet_name = 'x1')
+    city2.to_excel(writer, sheet_name = 'x2', index=False, startrow=1)
 
-# cannot add sheet, just create a book
-writer = pd.ExcelWriter('city2.xlsx', engine = 'xlsxwriter')
-df1.to_excel(writer, sheet_name = 'x1')
-df2.to_excel(writer, sheet_name = 'x2')
-writer.save()
-writer.close()
-
-# can add sheet 
-from openpyxl import load_workbook
-book = load_workbook('city2.xlsx')
-#book = load_workbook('test.xlsm', keep_vba=True)
-writer = pd.ExcelWriter('city2.xlsx', engine='openpyxl')
-writer.book = book
-city2.to_excel(writer, sheet_name='city2', index=False, startrow=0)
-writer.save()
-writer.close()
