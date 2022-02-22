@@ -197,3 +197,59 @@ df_p2.fillna(0)
 df_n = df.stack().reset_index()
 df_n.columns = ['index', 'columns', 'values']
 df_n
+
+
+
+#-------------------------------------------------------------
+# Excel
+#-------------------------------------------------------------
+# Reading
+# excel = pd.read_excel('city.xlsx') #read the first tab
+xls = pd.ExcelFile('city.xlsx')
+
+# to read all sheets
+dfs = {}
+for sheet_name in xls.sheet_names:
+    dfs[sheet_name] = xls.parse(sheet_name)
+    
+df1 = dfs['x1']
+df1 = xls.parse(0)
+
+df = pd.concat([df, df1])
+
+# create a book with many sheets
+# if exists, remove and recreat
+with pd.ExcelWriter('city.xlsx') as writer:
+    df.to_excel(writer, sheet_name='df', index=False, startrow=0)
+    df_n.to_excel(writer, sheet_name='df_n', index=False, startrow=0)
+    df.to_excel(writer, sheet_name='x2', index=False, startrow=0)
+    
+# append many sheets into existing book
+with pd.ExcelWriter('city.xlsx', engine='openpyxl', mode='a') as writer:
+    df.to_excel(writer, sheet_name='df', index=False, startrow=0)
+    df_n.to_excel(writer, sheet_name='df_n', index=False, startrow=0)
+    df.to_excel(writer, sheet_name='x2', index=False, startrow=11)
+
+
+
+#-------------------------------------------------------------
+# Linear Regression
+#-------------------------------------------------------------
+import numpy as np
+x = np.random.randn(100,1)
+y = 4+3*x + np.random.randn(100,1)
+
+from sklearn.linear_model import LinearRegression
+model = LinearRegression()
+model.fit(x,y)
+y_hat = model.predict(x)
+
+print(model.intercept_)
+print(model.coef_)
+print(model.score(x,y))
+
+import matplotlib.pyplot as plt
+plt.figure(figsize=(8,7))
+plt.scatter(x,y)
+plt.plot(x,y_hat,'r-')
+
