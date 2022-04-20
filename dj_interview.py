@@ -6,6 +6,11 @@ Created on Sun Feb 20 12:01:24 2022
 @author: djkim
 """
 
+import os
+import pandas as pd
+work_dir = os.getcwd()
+control = pd.read_csv(os.path.join(work_dir, 'control.csv'))
+
 #-------------------------------------------------------------
 # data structure: list, dict, set, tuple
 #-------------------------------------------------------------
@@ -34,9 +39,9 @@ my_list + [[555,12]] #same as append
 my_list[-1] #choose the last element
 
 odd = [x for x in range(100) if x % 2 == 1]
-odd
 odd2 = [x for x in range(1,100,2)]
-odd2
+odd3 = [2*x+1 for x in range(50)]
+
 
 """
 A common beginner question is what is the real difference between list and np.array. 
@@ -49,6 +54,7 @@ Functionality - SciPy and NumPy have optimized functions such as linear algebra 
 
 import numpy as np
 a = np.array([1,2,3])
+a.shape # numpy is column-wise
 b = np.array([555,12])
 np.concatenate([a,b])
 
@@ -62,6 +68,14 @@ np.arange(1,10,2)
 print(np.arange(1, 10, 2))
 print(np.linspace(1, 9, 5))  # max included
 # numpy.linspace(start, stop, num=50)
+
+A = np.arange(6).reshape(2, 3)
+B = A.T
+# matrix product
+A @ B
+A.dot(B)
+# elementwise product
+A * A
 
 # Dictionaries are used to store keys-values pairs = items
 my_dict = {'First': 'Python', 'Second': 'Java', 'Third': 'Ruby'}
@@ -93,6 +107,23 @@ print(my_tuple)
 
 
 #-------------------------------------------------------------
+# if, elif, else (and or)
+#-------------------------------------------------------------
+x=10
+if x % 2:
+    print(f'{x} is odd')
+else:
+    print(f'{x} is even')
+
+
+# ternary operator in Python
+print(f'{x} is odd') if x % 2 else print(f'{x} is even')
+
+# ternary operator in other languages
+# (x % 2) ? print(f'{x} is odd'): print(f'{x} is even')
+
+
+#-------------------------------------------------------------
 # lambda, def, class
 #-------------------------------------------------------------
 # 1. implement a function and a class for adding two numbers
@@ -114,6 +145,107 @@ print('3+4 in class: {}'.format(c.run()))
 # 2. define the function in an one line
 add2 = lambda a,b:a+b
 print('3+4 in lambda: {}'.format(add2(3,4)))
+
+
+
+#-------------------------------------------------------------
+# pandas
+#-------------------------------------------------------------
+import pandas as pd
+
+# 1. create a table
+dict = {'Name':['Tom', 'Tom', 'Jane', 'Jane','Steve'],
+        'Class':['math', 'science', 'math', 'art', 'science'],
+        'Grade':[80, 90, 70, 100, 85],
+        'Rank':[1,2,3,4,5]
+       } 
+df = pd.DataFrame(dict)  
+
+
+# 2. combine two tables
+df = pd.concat([df, df], ignore_index=True)
+
+# 3. subsetting (I prefer query to filtering)
+df.query("Class=='math' and Grade > 60")
+df.query(f"Grade >= {df.Grade.median()}")
+
+from pandasql import sqldf
+sqldf("select * from df where Class='math' and Grade>60")
+
+
+max_grade_name = df.loc[df['Grade'].idxmax(),'Name']
+sqldf(f"select distinct Name from df where Grade={df.Grade.max()}")
+sqldf("select Class, Name, max(Grade) as Grade from df group by Class")
+
+# stats
+df.groupby('Class').max()
+df.describe()
+
+df.groupby('Class').agg({'Grade':['max','median','min'], 'Name':'count'})
+df.pivot_table(index='Class',aggfunc={'Grade':['max','media  n','min'],'Name':'count'})
+
+# 4. pivot vs pivot_table
+# reshaping: normalized table to table with index, columns, values
+# pivot does not allow duplicate records (pivot_table is fine because of aggfunc)
+# below is error because of duplicate
+df_p = df.pivot(index='Name', columns='Class', values='Grade')
+df_p
+
+# below is ok
+df_p2 = df.pivot_table(index='Name', columns='Class', values='Grade', aggfunc='median', fill_value=0)
+# df_p2.fillna(0)
+
+# reshaping: table to normalized table
+df_n = df.stack().reset_index()
+df_n.columns = ['index', 'columns', 'values']
+df_n
+
+# math, science: pass if Grade is at least 80
+# art: pass if Grade is at least 90
+def final(row):
+    if row[1] == 'art':
+        return 'pass' if row[2] >= 90 else 'fail'
+    else:
+        return 'pass' if row[2] >= 80 else 'fail'
+    
+df['Final'] = df.apply(final, axis=1)
+# axis=0/1 same as axis='index'/'columns' for output shape
+df.sum(axis=0) #output is one row
+df.sum(axis=1) #output is one column
+
+#-------------------------------------------------------------
+# Excel
+#-------------------------------------------------------------
+# Reading
+# excel = pd.read_excel('city.xlsx') #read the first tab
+xls = pd.ExcelFile('city.xlsx')
+
+# to read all sheets
+dfs = {}
+for sheet_name in xls.sheet_names:
+    dfs[sheet_name] = xls.parse(sheet_name)
+    
+df1 = dfs['x2']
+df1 = xls.parse(0)
+
+df = pd.concat([df, df1])
+
+# create a book with many sheets
+# if exists, remove and recreat
+with pd.ExcelWriter('city.xlsx') as writer:
+    df.to_excel(writer, sheet_name='df', index=False, startrow=0)
+    df_n.to_excel(writer, sheet_name='df_n', index=False, startrow=0)
+    df.to_excel(writer, sheet_name='x2', index=False, startrow=0)
+    
+# append many sheets into existing book
+with pd.ExcelWriter('city.xlsx', engine='openpyxl', mode='a') as writer:
+    df.to_excel(writer, sheet_name='df', index=False, startrow=0)
+    df_n.to_excel(writer, sheet_name='df_n', index=False, startrow=0)
+    df.to_excel(writer, sheet_name='x2', index=False, startrow=11)
+
+
+with pd.ExcelWriter('city.xlsx', 'openpyxl', mode='a') as writer:
+    df.to_excel(writer, sheet_name='y', index=False)
 
 
 
@@ -147,89 +279,24 @@ s.loc['75%']-s.loc['25%']
 mv_10 = df.rolling(10).mean()
 
 # 5. plot time series and 10-day moving average together
-import matplotlib.pyplot as plt
-plt.figure(1, figsize=(10,15))
-plt.style.use('classic')
-plt.plot(df['a'], 'b:')
-plt.plot(mv_10['a'], 'r-')
-
-
-
-#-------------------------------------------------------------
-# pandas
-#-------------------------------------------------------------
+import numpy as np
 import pandas as pd
-
-# 1. create a table
-dict = {'Name':['Tom', 'Tom', 'Jane', 'Jane','Steve'],
-        'Class':['math', 'science', 'math', 'art', 'science'],
-        'Grade':[80, 90, 70, 100, 85]
-       } 
-df = pd.DataFrame(dict)  
+import matplotlib.pyplot as plt
+df = pd.DataFrame(np.random.randn(100), index=pd.date_range('1/1/2022', periods=100), columns=['x'])
+df['x10'] = df['x'].rolling(10).mean()
+plt.plot(df['x'], '-', df['x10'], 'r:')
 
 
-# 2. combine two tables
-df = pd.concat([df, df], ignore_index=True)
+fig = plt.figure(1)
+plt.plot(df['x'], '-', df['x10'], 'r:')
+fig.savefig('time_series.png')
 
-# 3. subsetting (I prefer query to filtering)
-df.query("Class=='math' and Grade > 60")
-
-from pandasql import sqldf
-sqldf("select * from df where Class='math' and Grade>60")
-
-# stats
-df.groupby('Class').max()
-df.describe()
-df.groupby('Class').agg({'Grade':['max','median','min'], 'Name':'count'})
-
-# 4. pivot vs pivot_table
-# reshaping: normalized table to table with index, columns, values
-# pivot does not allow duplicate records (pivot_table is fine because of aggfunc)
-# below is error because of duplicate
-df_p = df.pivot(index='Name', columns='Class', values='Grade')
-df_p
-
-# below is ok
-df_p2 = df.pivot_table(index='Name', columns='Class', values='Grade', aggfunc='median')
-df_p2.fillna(0)
-
-# reshaping: table to normalized table
-df_n = df.stack().reset_index()
-df_n.columns = ['index', 'columns', 'values']
-df_n
-
-
-
-#-------------------------------------------------------------
-# Excel
-#-------------------------------------------------------------
-# Reading
-# excel = pd.read_excel('city.xlsx') #read the first tab
-xls = pd.ExcelFile('city.xlsx')
-
-# to read all sheets
-dfs = {}
-for sheet_name in xls.sheet_names:
-    dfs[sheet_name] = xls.parse(sheet_name)
+with pd.ExcelWriter('time_series.xlsx') as writer:
+    df.to_excel(writer, sheet_name='data', index=False)
+    # worksheet = writer.sheets['data']
+    worksheet = writer.book.add_worksheet('figure')
+    worksheet.insert_image('A1', 'time_series.png')
     
-df1 = dfs['x1']
-df1 = xls.parse(0)
-
-df = pd.concat([df, df1])
-
-# create a book with many sheets
-# if exists, remove and recreat
-with pd.ExcelWriter('city.xlsx') as writer:
-    df.to_excel(writer, sheet_name='df', index=False, startrow=0)
-    df_n.to_excel(writer, sheet_name='df_n', index=False, startrow=0)
-    df.to_excel(writer, sheet_name='x2', index=False, startrow=0)
-    
-# append many sheets into existing book
-with pd.ExcelWriter('city.xlsx', engine='openpyxl', mode='a') as writer:
-    df.to_excel(writer, sheet_name='df', index=False, startrow=0)
-    df_n.to_excel(writer, sheet_name='df_n', index=False, startrow=0)
-    df.to_excel(writer, sheet_name='x2', index=False, startrow=11)
-
 
 
 #-------------------------------------------------------------
