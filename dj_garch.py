@@ -8,12 +8,81 @@ Created on Fri Apr 22 21:45:48 2022
 
 import numpy as np
 import pandas as pd
+
+FTSE100 = pd.read_csv('FTSE100.csv')
+df = FTSE100.copy()
+df.rename(columns={'FTSE100':'price'}, inplace=True)
+
+# log return
+# df['log_rtn'] = np.log(1+df['FTSE100'].pct_change())
+df['log_rtn'] = np.log(df.price/df.price.shift(1))
+mu = df.loc[1:,'log_rtn'].mean()
+df.loc[0,'log_rtn'] = mu
+
+# error square
+df['e_square'] = np.square(df.log_rtn - mu)
+var = df.loc[1:,'e_square'].mean()
+df.loc[0,'e_square'] = var
+
+# sigma square (conditional variance)
+df['sigma_square'] = df['e_square']
+# for i in range(df.shape[0]-1):
+#     df.loc[i+1,'sigma_square'] = omega + alpha*df.loc[i,'e_square'] + beta*df.loc[i,'sigma_square']
+
+# # log likelihood
+# df['log_likelihood'] = (-np.log(np.sqrt(df['sigma_square'])) 
+#                         - 0.5*df['e_square']/df['sigma_square'])
+# df.loc[0,'log_likelihood'] = 0.0
+# df.log_likelihood.sum()
+
+# maximize log likelihood = minimize minus log likelihood
+import scipy.optimize as opt
+
+# objective function: minimize minus log likelihood
+def obj_fun(x):
+    df.loc[0,'sigma_square'] = df.loc[0,'e_square']
+    for i in range(df.shape[0]-1):
+        df.loc[i+1,'sigma_square'] = x[0] + x[1]*df.loc[i,'e_square'] + x[2]*df.loc[i,'sigma_square']
+    
+    # log likelihood
+    df['log_likelihood'] = (-np.log(np.sqrt(df['sigma_square'])) 
+                            - 0.5*df['e_square']/df['sigma_square'])
+    df.loc[0,'log_likelihood'] = 0.0
+    return -df.log_likelihood.sum()
+
+# constraints: alpha + beta <= 1 or 1 - alpha - beta > 0
+constraints = ({'type':'ineq','fun': lambda x:1.0-x[1]-x[2]})
+
+# omega, alhpa, beta >= 0
+bounds = [(0,None), (0,1), (0,1)]
+
+# initialize
+omega = 0.0
+alpha = 0.1
+beta = 0.9
+x = [omega, alpha, beta]
+
+results = opt.minimize(obj_fun, x, method='SLSQP', bounds=bounds, constraints=constraints)
+
+print(results)
+print(f'max log likelihood = {-results.fun:.2f}')
+print(f'omega = {results.x[0]:.4f}')
+print(f'alpha = {results.x[1]:.4f}')
+print(f'beta= {results.x[2]:.4f}')
+
+print(obj_fun([0.01,0.1,0.9]))
+print(obj_fun([9.9973e-07,0.0869,0.9055]))
+
+
+
+import numpy as np
+import pandas as pd
 from arch import arch_model
 
 FTSE100 = pd.read_csv('FTSE100.csv')
 
-returns = 100 * FTSE100['FTSE100'].pct_change().dropna()
-# returns = 100 * FTSE100['FTSE100'].iloc[2018:].pct_change().dropna()
+# returns = 100 * FTSE100['FTSE100'].pct_change().dropna()
+returns = df.log_rtn.copy()
 
 model = arch_model(returns, p=1, q=1)
 
